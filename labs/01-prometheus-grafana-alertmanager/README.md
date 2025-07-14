@@ -111,6 +111,17 @@ Important:
 | NodeDown        | `kubectl delete pod -l app.kubernetes.io/name=node-exporter -n monitoring`             |
 | KubePodNotReady | Apply `slow-ready-pod.yaml` (fails readiness probe)                                    |
 
+### We can achieve this using below as well
+
+```
+kubectl apply -f custom-rules.yaml
+kubectl apply -f cpu-hog.yaml
+kubectl apply -f mem-hog.yaml
+kubectl apply -f crashloop-pod.yaml
+kubectl apply -f slow-ready-pod.yaml
+
+```
+
 ⏱ Wait 1–2 minutes and check:
 
 * Prometheus UI → Alerts
