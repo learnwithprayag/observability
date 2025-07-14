@@ -11,7 +11,14 @@
 * Integrate email, Slack, and OpsGenie alert notifications
 
 ---
+##  Prerequisites
 
+* Kubernetes cluster (e.g., MicroK8s with MetalLB, GKE, Kind, Minikube)
+* `kubectl` and `helm` installed
+* Internet access from nodes
+* Slack webhook, Gmail app password, OpsGenie API key (for notifications)
+
+---
 ## Pre-requisite - Install an k8s, in this case microk8s
 
 ### Install MicroK8s
@@ -44,14 +51,10 @@ source ~/.bashrc
 kubectl get nodes
 kubectl get pods -A
 
----
+### Install helm, kubectl
 
-##  Prerequisites
-
-* Kubernetes cluster (e.g., MicroK8s with MetalLB, GKE, Kind, Minikube)
-* `kubectl` and `helm` installed
-* Internet access from nodes
-* Slack webhook, Gmail app password, OpsGenie API key (for notifications)
+sudo snap install helm --classic
+kubectl config > ~/.kube/config
 
 ---
 
