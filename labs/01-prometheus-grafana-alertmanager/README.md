@@ -44,13 +44,69 @@ helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-sta
 
 ```bash
 # Prometheus
-kubectl port-forward svc/prometheus-stack-kube-prometheus-prometheus -n monitoring 9090
+kubectl port-forward svc/prometheus-stack-kube-prom-prometheus -n monitoring 9090
 
 # Grafana
 kubectl port-forward svc/prometheus-stack-grafana -n monitoring 3000:80
 
 # Alertmanager
 kubectl port-forward svc/prometheus-stack-kube-prometheus-alertmanager -n monitoring 9093
+```
+or via LB
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-lb
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: grafana
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-lb
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  type: LoadBalancer
+  selector:
+    prometheus: prometheus-stack-kube-prom-prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-lb
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: LoadBalancer
+  selector:
+    alertmanager: prometheus-stack-kube-prom-alertmanager
+  ports:
+    - port: 9093
+      targetPort: 9093
+      protocol: TCP
+      name: http
+EOF
 ```
 
 * Prometheus: [http://localhost:9090](http://localhost:9090)
