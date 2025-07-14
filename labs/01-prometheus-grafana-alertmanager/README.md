@@ -269,7 +269,7 @@ alertmanager:
       smtp_from: prayag.rhce@gmail.com
       smtp_smarthost: smtp.gmail.com:587
       smtp_auth_username: prayag.rhce@gmail.com
-      smtp_auth_password: eate zcld hrnm mxfd
+      smtp_auth_password: <replace-me>
       smtp_require_tls: true
     route:
       receiver: email-notifier
