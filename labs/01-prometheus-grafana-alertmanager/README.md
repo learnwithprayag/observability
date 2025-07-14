@@ -14,33 +14,33 @@
 
 ## Pre-requisite - Install an k8s, in this case microk8s
 
-# Install MicroK8s
+### Install MicroK8s
 sudo snap install microk8s --classic
 
-# Add your user to the microk8s group
+### Add your user to the microk8s group
 sudo usermod -a -G microk8s $USER
 sudo chown -f -R $USER ~/.kube
 
-# Apply new group without logout
+### Apply new group without logout
 newgrp microk8s
 
-# Check MicroK8s status
+### Check MicroK8s status
 microk8s status --wait-ready
 
-# Enable common addons (DNS, Storage, Ingress, Helm, MetalLB)
+### Enable common addons (DNS, Storage, Ingress, Helm, MetalLB)
 microk8s enable dns storage ingress helm3
 microk8s enable metallb:10.128.0.51-10.128.0.55   # Replace with your subnet range
 
-# Set aliases for kubectl and helm (optional, for ease)
+### Set aliases for kubectl and helm (optional, for ease)
 alias kubectl='microk8s kubectl'
 alias helm='microk8s helm3'
 
-# To make aliases permanent
+### To make aliases permanent
 echo "alias kubectl='microk8s kubectl'" >> ~/.bashrc
 echo "alias helm='microk8s helm3'" >> ~/.bashrc
 source ~/.bashrc
 
-# Test Kubernetes is working
+### Test Kubernetes is working
 kubectl get nodes
 kubectl get pods -A
 
