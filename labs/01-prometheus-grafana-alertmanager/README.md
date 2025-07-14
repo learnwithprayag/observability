@@ -1,22 +1,24 @@
-#  Lab 01: Prometheus + Grafana + Alertmanager on Kubernetes using Helm
+---
+
+# Lab 01: Prometheus + Grafana + Alertmanager on Kubernetes using Helm
 
 ---
 
 ##  Objective
 
-- Install `kube-prometheus-stack` (Prometheus, Grafana, Alertmanager)
-- Access dashboards and alerting UIs
-- Configure custom alerts
-- Simulate alerts for learning
-- Send alert emails using Gmail SMTP
+* Install `kube-prometheus-stack` (Prometheus, Grafana, Alertmanager)
+* Access dashboards and alerting UIs
+* Configure custom alerts and simulate them
+* Integrate email, Slack, and OpsGenie alert notifications
 
 ---
 
 ##  Prerequisites
 
-- Kubernetes cluster (Minikube, Kind, MicroK8s, GKE, etc.)
-- `kubectl` and `helm` installed
-- Internet access from nodes
+* Kubernetes cluster (e.g., MicroK8s with MetalLB, GKE, Kind, Minikube)
+* `kubectl` and `helm` installed
+* Internet access from nodes
+* Slack webhook, Gmail app password, OpsGenie API key (for notifications)
 
 ---
 
@@ -25,11 +27,11 @@
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-````
+```
 
 ---
 
-##  Step 2: Deploy `kube-prometheus-stack`
+##  Step 2: Install kube-prometheus-stack
 
 ```bash
 kubectl create namespace monitoring
@@ -40,29 +42,15 @@ helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-sta
 
 ---
 
-##  Step 3: Access UIs (Port Forwarding)
+##  Step 3: Access Dashboards (NodePort Method)
 
 ```bash
-# Prometheus
-kubectl port-forward svc/prometheus-stack-kube-prom-prometheus -n monitoring 9090
-
-# Grafana
-kubectl port-forward svc/prometheus-stack-grafana -n monitoring 3000:80
-
-# Alertmanager
-kubectl port-forward svc/prometheus-stack-kube-prometheus-alertmanager -n monitoring 9093
-```
-or via NodePort
-
-```
 cat <<EOF > nodeport-monitoring.yaml
 apiVersion: v1
 kind: Service
 metadata:
   name: grafana-nodeport
   namespace: monitoring
-  labels:
-    app: grafana
 spec:
   type: NodePort
   selector:
@@ -70,17 +58,13 @@ spec:
   ports:
     - port: 80
       targetPort: 3000
-      protocol: TCP
       nodePort: 32080
-      name: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: prometheus-nodeport
   namespace: monitoring
-  labels:
-    app: prometheus
 spec:
   type: NodePort
   selector:
@@ -88,17 +72,13 @@ spec:
   ports:
     - port: 9090
       targetPort: 9090
-      protocol: TCP
       nodePort: 32090
-      name: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: alertmanager-nodeport
   namespace: monitoring
-  labels:
-    app: alertmanager
 spec:
   type: NodePort
   selector:
@@ -106,122 +86,181 @@ spec:
   ports:
     - port: 9093
       targetPort: 9093
-      protocol: TCP
       nodePort: 32093
-      name: http
 EOF
 
 kubectl apply -f nodeport-monitoring.yaml
-
 ```
 
-* Prometheus: [http://localhost:9090](http://localhost:9090)
-* Grafana: [http://localhost:3000](http://localhost:3000)
-* Alertmanager: [http://localhost:9093](http://localhost:9093)
+Now access via:
+
+* **Grafana:** `http://<node-ip>:32080`
+* **Prometheus:** `http://<node-ip>:32090`
+* **Alertmanager:** `http://<node-ip>:32093`
 
 ---
 
-##  Step 4: Login to Grafana
+##  Step 4: Grafana Login
 
 * **Username:** `admin`
-* **Password:** `prom-operator`
+* **Password:** auto-generated:
 
-Change the password on first login.
+  ```bash
+  kubectl get secret prometheus-stack-grafana -n monitoring -o jsonpath="{.data.admin-password}" | base64 -d && echo
+  ```
 
 ---
 
-##  Step 5: Import Dashboards in Grafana
-
-Go to **+ → Import Dashboard** in Grafana:
+##  Step 5: Import Grafana Dashboards
 
 | Dashboard Name     | ID     |
 | ------------------ | ------ |
 | Node Exporter Full | `1860` |
 | Kubernetes Cluster | `6417` |
 
+Navigate to: **+ → Import** in Grafana and enter the ID.
+
 ---
 
-##  Step 6: Add Custom Alert Rules
-
-Use the file `custom-rules.yaml` to define:
-
-* High CPU
-* High Memory
-* Pod CrashLoop
-* Node Down
-* Pod Not Ready
-
-### Apply the file:
+##  Step 6: Create Alert Rules
 
 ```bash
+cat <<EOF > custom-rules.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: demo-alerts
+  namespace: monitoring
+spec:
+  groups:
+  - name: example.rules
+    rules:
+    - alert: HighCPUUsage
+      expr: rate(container_cpu_usage_seconds_total{container!="",namespace="default"}[1m]) > 0.5
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "High CPU usage on {{ \$labels.pod }}"
+        description: "Pod {{ \$labels.pod }} is using high CPU."
+EOF
+
 kubectl apply -f custom-rules.yaml
 ```
-
-Important:
-
-* Ensure label `release: prometheus-stack` matches Helm release name
 
 ---
 
 ##  Step 7: Simulate Alerts
 
-| Alert Name      | How to Simulate                                                                        |
-| --------------- | -------------------------------------------------------------------------------------- |
-| HighNodeCPU     | `kubectl run cpu-hog --image=busybox -- /bin/sh -c "while true; do :; done"`           |
-| HighNodeMemory  | `kubectl run mem-hog --image=polinux/stress -- /usr/bin/stress --vm 1 --vm-bytes 512M` |
-| PodCrashLooping | Apply `crashloop-pod.yaml` (container exits with error)                                |
-| NodeDown        | `kubectl delete pod -l app.kubernetes.io/name=node-exporter -n monitoring`             |
-| KubePodNotReady | Apply `slow-ready-pod.yaml` (fails readiness probe)                                    |
-
-### We can achieve this using below as well
-
+```bash
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-hog
+  namespace: monitoring
+spec:
+  containers:
+  - name: hog
+    image: busybox
+    args: ["/bin/sh", "-c", "while true; do :; done"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mem-hog
+  namespace: monitoring
+spec:
+  containers:
+  - name: mem
+    image: polinux/stress
+    command: ["/usr/bin/stress"]
+    args: ["--vm", "1", "--vm-bytes", "512M", "--vm-hang", "0"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: crashloop
+  namespace: monitoring
+spec:
+  containers:
+  - name: bad
+    image: busybox
+    command: ["/bin/false"]
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: slow-pod
+  namespace: monitoring
+spec:
+  containers:
+  - name: wait
+    image: busybox
+    args: ["sleep", "3600"]
+    readinessProbe:
+      exec:
+        command: ["false"]
+      initialDelaySeconds: 5
+      periodSeconds: 5
+EOF
 ```
-kubectl apply -f custom-rules.yaml
-kubectl apply -f cpu-hog.yaml
-kubectl apply -f mem-hog.yaml
-kubectl apply -f crashloop-pod.yaml
-kubectl apply -f slow-ready-pod.yaml
-
-```
-
-⏱ Wait 1–2 minutes and check:
-
-* Prometheus UI → Alerts
-* Alertmanager → [http://localhost:9093](http://localhost:9093)
-* Grafana → Alerting → Manage
 
 ---
 
-##  Step 8: Enable Gmail SMTP Alert Notifications
+##  Step 8: Configure Notifications (SMTP + Slack + OpsGenie)
 
-1. Generate a Gmail **App Password** at [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
-2. Use `alertmanager-smtp-config.yaml`:
-
-```yaml
+```bash
+cat <<EOF > alertmanager-values.yaml
 alertmanager:
   config:
     global:
-      smtp_smarthost: 'smtp.gmail.com:587'
-      smtp_from: 'your-email@gmail.com'
-      smtp_auth_username: 'your-email@gmail.com'
-      smtp_auth_password: 'your-app-password'
+      resolve_timeout: 5m
+      smtp_from: your_email@gmail.com
+      smtp_smarthost: smtp.gmail.com:587
+      smtp_auth_username: your_email@gmail.com
+      smtp_auth_password: your_app_password
       smtp_require_tls: true
-
     route:
-      receiver: 'gmail'
-
+      receiver: email-notifier
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 1h
+      routes:
+      - receiver: slack-notifier
+        matchers:
+        - severity="critical"
+      - receiver: email-notifier
+        matchers:
+        - severity="warning"
+      - receiver: opsgenie-notifier
+        matchers:
+        - team="ops"
     receivers:
-      - name: 'gmail'
-        email_configs:
-          - to: 'your-email@gmail.com'
-            send_resolved: true
-```
+    - name: email-notifier
+      email_configs:
+      - to: your_email@gmail.com
+        send_resolved: true
+    - name: slack-notifier
+      slack_configs:
+      - api_url: https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+        channel: '#alerts'
+        send_resolved: true
+        title: '{{ .CommonLabels.alertname }} - {{ .Status }}'
+        text: |
+          *Severity:* {{ .CommonLabels.severity }} *Instance:* {{ .CommonLabels.instance }} *Summary:* {{ .Annotations.summary }}
+    - name: opsgenie-notifier
+      opsgenie_configs:
+      - api_key: your_opsgenie_api_key
+        send_resolved: true
+        responders:
+        - name: DevOps Team
+          type: team
+EOF
 
-3. Upgrade the Helm release:
-
-```bash
 helm upgrade prometheus-stack prometheus-community/kube-prometheus-stack \
-  -n monitoring -f alertmanager-smtp-config.yaml
+  -n monitoring -f alertmanager-values.yaml
 ```
 
 ---
@@ -236,30 +275,30 @@ kubectl delete ns monitoring
 
 ---
 
-## 📚 References
-
-* [Prometheus Helm Chart](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack)
-* [Grafana Dashboards](https://grafana.com/grafana/dashboards)
-* [PromQL Docs](https://prometheus.io/docs/prometheus/latest/querying/basics/)
-* [Alertmanager Config](https://prometheus.io/docs/alerting/latest/configuration/)
-
-
----
-
-## 🗂️ Folder Structure
+##  Folder Structure
 
 ```
 observability/
 └── labs/
-└── 01-prometheus-grafana-alertmanager/
-├── README.md
-├── custom-rules.yaml
-├── cpu-hog.yaml
-├── mem-hog.yaml
-├── crashloop-pod.yaml
-├── slow-ready-pod.yaml
-└── alertmanager-smtp-config.yaml
+    └── 01-prometheus-grafana-alertmanager/
+        ├── README.md
+        ├── custom-rules.yaml
+        ├── cpu-hog.yaml
+        ├── mem-hog.yaml
+        ├── crashloop-pod.yaml
+        ├── slow-ready-pod.yaml
+        ├── nodeport-monitoring.yaml
+        └── alertmanager-values.yaml
 ```
+
+---
+
+##  References
+
+* [kube-prometheus-stack Chart](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack)
+* [Prometheus Alerting](https://prometheus.io/docs/alerting/latest/overview/)
+* [Alertmanager Config](https://prometheus.io/docs/alerting/latest/configuration/)
+* [Grafana Dashboards](https://grafana.com/grafana/dashboards)
 
 ---
 
