@@ -68,7 +68,7 @@ kubectl get pods -A
 ### Install helm, kubectl
 ```
 sudo snap install helm --classic
-kubectl config > ~/.kube/config
+microk8s config > ~/.kube/config
 ```
 ---
 
