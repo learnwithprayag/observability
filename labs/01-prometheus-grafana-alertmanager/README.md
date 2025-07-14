@@ -170,14 +170,12 @@ kubectl delete ns monitoring
 * [PromQL Docs](https://prometheus.io/docs/prometheus/latest/querying/basics/)
 * [Alertmanager Config](https://prometheus.io/docs/alerting/latest/configuration/)
 
-```
 
 ---
 
 ## 🗂️ Folder Structure
 
 ```
-
 observability/
 └── labs/
 └── 01-prometheus-grafana-alertmanager/
@@ -188,7 +186,6 @@ observability/
 ├── crashloop-pod.yaml
 ├── slow-ready-pod.yaml
 └── alertmanager-smtp-config.yaml
-
 ```
 
 ---
