@@ -71,6 +71,61 @@ sudo snap install helm --classic
 microk8s config > ~/.kube/config
 ```
 ---
+###  Configure Gmail SMTP (App Password)
+
+**Enable 2-Step Verification** on your Gmail account:
+    [https://myaccount.google.com/security](https://myaccount.google.com/security)
+
+**Create an App Password**:
+    [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+
+   * Choose `Mail` and `Other` (enter e.g., `K8s Alertmanager`)
+   * Copy the **16-character password**
+
+**Use in Alertmanager config**:
+
+```yaml
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'your_email@gmail.com'
+  smtp_auth_username: 'your_email@gmail.com'
+  smtp_auth_password: 'your_app_password'  # paste 16-char app password here
+  smtp_require_tls: true
+```
+
+---
+
+###  Configure Slack Alerting
+
+**Create a Slack App / Webhook**:
+    [https://api.slack.com/messaging/webhooks](https://api.slack.com/messaging/webhooks)
+
+**Choose a channel** (e.g., `#alerts`) and **install** the webhook
+
+**Copy the Webhook URL**, it looks like:
+
+```
+https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+```
+
+**Add to Alertmanager config**:
+
+```yaml
+receivers:
+  - name: slack-notifier
+    slack_configs:
+      - send_resolved: true
+        api_url: https://hooks.slack.com/services/...
+        channel: "#alerts"
+        title: '{{ .CommonLabels.alertname }} - {{ .Status }}'
+        text: |
+          *Severity:* {{ .CommonLabels.severity }}
+          *Instance:* {{ .CommonLabels.instance }}
+          *Summary:* {{ .Annotations.summary }}
+```
+
+---
+
 
 ##  Step 1: Add Helm Repo and Update
 
