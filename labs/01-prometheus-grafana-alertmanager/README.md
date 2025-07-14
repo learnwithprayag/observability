@@ -266,10 +266,10 @@ alertmanager:
   config:
     global:
       resolve_timeout: 5m
-      smtp_from: your_email@gmail.com
+      smtp_from: prayag.rhce@gmail.com
       smtp_smarthost: smtp.gmail.com:587
-      smtp_auth_username: your_email@gmail.com
-      smtp_auth_password: your_app_password
+      smtp_auth_username: prayag.rhce@gmail.com
+      smtp_auth_password: eate zcld hrnm mxfd
       smtp_require_tls: true
     route:
       receiver: email-notifier
@@ -290,7 +290,7 @@ alertmanager:
     receivers:
     - name: email-notifier
       email_configs:
-      - to: your_email@gmail.com
+      - to: prayag.rhce@gmail.com
         send_resolved: true
     - name: slack-notifier
       slack_configs:
