@@ -52,61 +52,67 @@ kubectl port-forward svc/prometheus-stack-grafana -n monitoring 3000:80
 # Alertmanager
 kubectl port-forward svc/prometheus-stack-kube-prometheus-alertmanager -n monitoring 9093
 ```
-or via LB
+or via NodePort
 
 ```
-cat <<EOF | kubectl apply -f -
+cat <<EOF > nodeport-monitoring.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: grafana-lb
+  name: grafana-nodeport
   namespace: monitoring
   labels:
     app: grafana
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app.kubernetes.io/name: grafana
   ports:
     - port: 80
       targetPort: 3000
       protocol: TCP
+      nodePort: 32080
       name: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: prometheus-lb
+  name: prometheus-nodeport
   namespace: monitoring
   labels:
     app: prometheus
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     prometheus: prometheus-stack-kube-prom-prometheus
   ports:
     - port: 9090
       targetPort: 9090
       protocol: TCP
+      nodePort: 32090
       name: http
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: alertmanager-lb
+  name: alertmanager-nodeport
   namespace: monitoring
   labels:
     app: alertmanager
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     alertmanager: prometheus-stack-kube-prom-alertmanager
   ports:
     - port: 9093
       targetPort: 9093
       protocol: TCP
+      nodePort: 32093
       name: http
 EOF
+
+kubectl apply -f nodeport-monitoring.yaml
+
 ```
 
 * Prometheus: [http://localhost:9090](http://localhost:9090)
