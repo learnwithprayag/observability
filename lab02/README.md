@@ -129,6 +129,8 @@ spec:
 EOF
 
 kubectl apply -f podmonitor.yaml
+kubectl -n monitoring get podmonitor | grep podmon-echo
+kubectl -n monitoring describe podmonitor podmon-echo
 ```
 
 ---
@@ -157,6 +159,8 @@ spec:
 EOF
 
 kubectl apply -f prometheusrule.yaml
+kubectl -n monitoring get prometheusrule | grep http-echo-alert
+
 ```
 
 ---
@@ -205,6 +209,7 @@ spec:
 EOF
 
 kubectl apply -f blackbox-exporter.yaml
+
 ```
 
 Wait for the pod:
