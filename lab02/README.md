@@ -173,6 +173,118 @@ kubectl -n demo run curlpod --rm -it --image=curlimages/curl --restart=Never -- 
 
 ---
 
+Great! Let's extend **Lab 02** by adding **Prometheus Alerts (PrometheusRule)** for our instrumented Flask app that exposes the `/metrics` endpoint.
+
+---
+
+### Prometheus Alerting Rules**
+
+We'll define a **PrometheusRule** that alerts when:
+
+* The app is **down** (no `up{job="flask-metrics"}` for 1 minute).
+* The app receives **too many requests** (`app_requests_total > threshold` in a time window).
+
+---
+
+###  **Create `prometheus-rules.yaml`**
+
+```bash
+cat >> prometheus-rules.yaml <<EOF
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: flask-metrics-rules
+  namespace: monitoring
+  labels:
+    prometheus: k8s
+    role: alert-rules
+spec:
+  groups:
+  - name: flask-metrics-alerts
+    rules:
+    - alert: FlaskAppDown
+      expr: up{job="flask-metrics"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Flask App is down"
+        description: "The flask-metrics app in namespace 'demo' is not responding to Prometheus scrapes."
+
+    - alert: HighRequestRate
+      expr: increase(app_requests_total[1m]) > 50
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High number of requests"
+        description: "More than 50 requests hit flask-metrics in the last minute."
+EOF
+```
+
+---
+
+### Apply PrometheusRule
+
+```bash
+kubectl apply -f prometheus-rules.yaml
+```
+
+---
+
+### Verify:
+
+**Open Prometheus UI**:
+
+   ```
+   http://<your-node-ip>:32090
+   ```
+
+   **Go to "Alerts" tab** — you should see:
+
+   * `FlaskAppDown` (pending/firing if app is stopped)
+   * `HighRequestRate` (fire if you spam the endpoint)
+
+   You can test alerts:
+
+   * Scale the deployment to 0:
+
+     ```bash
+     kubectl -n demo scale deployment flask-metrics --replicas=0
+     ```
+   * Generate traffic:
+
+     ```bash
+     kubectl -n demo run spammer --rm -it --image=curlimages/curl --restart=Never -- \
+       sh -c 'for i in \$(seq 1 100); do curl -s flask-metrics.demo.svc.cluster.local:5000/; done'
+     ```
+
+---
+
+### 📁 Updated Folder Structure
+
+```
+observability/
+└── lab02/
+    ├── app.py
+    ├── Dockerfile
+    ├── k8s-deployment.yaml
+    ├── servicemonitor.yaml
+    ├── prometheus-rules.yaml
+```
+
+---
+
+### ✅ Optional: Cleanup
+
+```bash
+kubectl delete ns demo
+kubectl -n monitoring delete servicemonitor flask-metrics-monitor
+kubectl -n monitoring delete prometheusrule flask-metrics-rules
+```
+
+---
+
 ###  Cleanup (Optional)
 
 ```bash
