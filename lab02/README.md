@@ -1,118 +1,34 @@
+---
+
 # Lab 02: Custom Monitoring with ServiceMonitor, PodMonitor, PrometheusRule & Blackbox Exporter (No Helm)
 
 ---
 
 ##  Objectives
 
-- Monitor sample app via:
-  - `ServiceMonitor`
-  - `PodMonitor`
-  - `PrometheusRule`
-  - `Probe` using Blackbox Exporter
-- Visualize metrics in Prometheus & Grafana
-- Trigger alerts on failures
+* Monitor sample application using:
+
+  * `ServiceMonitor`
+  * `PodMonitor`
+  * `PrometheusRule`
+  * `Probe` with Blackbox Exporter
+* View metrics in Prometheus & Grafana
+* Trigger alerts if app or endpoints are unreachable
 
 ---
 
-##  Prerequisites
+## Prerequisites
 
-- `Lab 01` completed with kube-prometheus-stack running (No Helm)
-- `kubectl` configured
-- NodePort access enabled (Grafana/Prometheus)
+*  Lab 01 completed with kube-prometheus-stack deployed (No Helm)
+* `kubectl` configured
+* NodePort access enabled to Prometheus & Grafana
 
 ---
 
-##  Step 1: Deploy Sample HTTP Echo App
+## Deploy Sample HTTP Echo App
 
 ```bash
-kubectl apply -f deploy-echo.yaml
-````
-
----
-
-##  Step 2: Add ServiceMonitor
-
-```bash
-kubectl apply -f servicemonitor.yaml
-```
-
----
-
-##  Step 3: Add PodMonitor
-
-```bash
-kubectl apply -f podmonitor.yaml
-```
-
----
-
-##  Step 4: Add Prometheus Alert Rule
-
-```bash
-kubectl apply -f prometheusrule.yaml
-```
-
----
-
-## Step 5: Deploy Blackbox Exporter
-
-```bash
-kubectl apply -f blackbox-exporter.yaml
-```
-
-Wait for pod to be running:
-
-```bash
-kubectl get pods -n monitoring -l app.kubernetes.io/name=blackbox-exporter
-```
-
----
-
-##  Step 6: Add Probe for External Target
-
-```bash
-kubectl apply -f probe.yaml
-```
-
----
-
-##  Step 7: Validate in Prometheus UI
-
-Open:
-
-```
-http://<node-ip>:32090
-```
-
-Run queries:
-
-* `up{job=~"http-echo.*"}`
-* `probe_success{instance="https://www.google.com"}`
-
----
-
-##  Cleanup
-
-```bash
-kubectl delete ns demo
-kubectl delete servicemonitor,podmonitor,probe,prometheusrule -n monitoring --all
-kubectl delete -f blackbox-exporter.yaml
-```
-
----
-
-##  References
-
-* [ServiceMonitor Spec](https://prometheus-operator.dev/docs/operator/api/#servicemonitor)
-* [Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)
-
-````
-
----
-
-##  `deploy-echo.yaml`
-
-```yaml
+cat <<EOF | tee deploy-echo.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -154,13 +70,17 @@ spec:
     targetPort: 5678
   selector:
     app: http-echo
-````
+EOF
+
+kubectl apply -f deploy-echo.yaml
+```
 
 ---
 
-##  `servicemonitor.yaml`
+##  Add ServiceMonitor
 
-```yaml
+```bash
+cat <<EOF | tee servicemonitor.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -176,13 +96,17 @@ spec:
   endpoints:
   - port: http
     interval: 15s
+EOF
+
+kubectl apply -f servicemonitor.yaml
 ```
 
 ---
 
-##  `podmonitor.yaml`
+##  Add PodMonitor
 
-```yaml
+```bash
+cat <<EOF | tee podmonitor.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
@@ -198,13 +122,17 @@ spec:
   podMetricsEndpoints:
   - port: http
     interval: 15s
+EOF
+
+kubectl apply -f podmonitor.yaml
 ```
 
 ---
 
-##  `prometheusrule.yaml`
+##  Add PrometheusRule
 
-```yaml
+```bash
+cat <<EOF | tee prometheusrule.yaml
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -222,34 +150,17 @@ spec:
       annotations:
         summary: "Echo App is Down"
         description: "No scrape data received from echo app"
+EOF
+
+kubectl apply -f prometheusrule.yaml
 ```
 
 ---
 
-##  `probe.yaml`
+##  Deploy Blackbox Exporter
 
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: Probe
-metadata:
-  name: google-http-probe
-  namespace: monitoring
-spec:
-  jobName: google-probe
-  prober:
-    url: http://blackbox-exporter:9115
-  module: http_2xx
-  targets:
-    staticConfig:
-      static:
-      - https://www.google.com
-```
-
----
-
-##  `blackbox-exporter.yaml`
-
-```yaml
+```bash
+cat <<EOF | tee blackbox-exporter.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -287,20 +198,90 @@ spec:
     targetPort: 9115
   selector:
     app.kubernetes.io/name: blackbox-exporter
-```
----
+EOF
 
-## 📁 `observability/lab02/` Folder Structure
-
+kubectl apply -f blackbox-exporter.yaml
 ```
-lab02/
-├── README.md
-├── deploy-echo.yaml
-├── servicemonitor.yaml
-├── podmonitor.yaml
-├── prometheusrule.yaml
-├── probe.yaml
-└── blackbox-exporter.yaml
+
+Wait for the pod:
+
+```bash
+kubectl get pods -n monitoring -l app.kubernetes.io/name=blackbox-exporter
 ```
 
 ---
+
+## Add Probe for External Target
+
+```bash
+cat <<EOF | tee probe.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: google-http-probe
+  namespace: monitoring
+spec:
+  jobName: google-probe
+  prober:
+    url: http://blackbox-exporter:9115
+  module: http_2xx
+  targets:
+    staticConfig:
+      static:
+      - https://www.google.com
+EOF
+
+kubectl apply -f probe.yaml
+```
+
+---
+
+##  Validate in Prometheus UI
+
+Visit:
+
+```
+http://<node-ip>:32090
+```
+
+Try Prometheus queries:
+
+```promql
+up{job=~"http-echo.*"}
+probe_success{instance="https://www.google.com"}
+```
+
+---
+
+## Cleanup
+
+```bash
+kubectl delete ns demo
+kubectl delete servicemonitor,podmonitor,probe,prometheusrule -n monitoring --all
+kubectl delete -f blackbox-exporter.yaml
+```
+
+---
+
+## 📂 Folder Structure
+
+```
+observability/
+└── lab02/
+    ├── README.md
+    ├── deploy-echo.yaml
+    ├── servicemonitor.yaml
+    ├── podmonitor.yaml
+    ├── prometheusrule.yaml
+    ├── probe.yaml
+    └── blackbox-exporter.yaml
+```
+
+---
+
+## References
+
+* 🔗 [ServiceMonitor API Spec](https://prometheus-operator.dev/docs/operator/api/#servicemonitor)
+* 🔗 [Blackbox Exporter GitHub](https://github.com/prometheus/blackbox_exporter)
+
+
