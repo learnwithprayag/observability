@@ -127,7 +127,7 @@ receivers:
 ---
 
 
-##  Step 1: Add Helm Repo and Update
+##  Add Helm Repo and Update
 
 ```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
@@ -136,7 +136,7 @@ helm repo update
 
 ---
 
-##  Step 2: Install kube-prometheus-stack
+##  Install kube-prometheus-stack
 
 ```bash
 kubectl create namespace monitoring
@@ -147,7 +147,7 @@ helm upgrade --install prometheus-stack prometheus-community/kube-prometheus-sta
 
 ---
 
-##  Step 3: Access Dashboards (NodePort Method)
+##  Access Dashboards (NodePort Method)
 
 ```bash
 cat <<EOF > nodeport-monitoring.yaml
@@ -205,7 +205,7 @@ Now access via:
 
 ---
 
-##  Step 4: Grafana Login
+##  Grafana Login
 
 * **Username:** `admin`
 * **Password:** auto-generated:
@@ -216,7 +216,7 @@ Now access via:
 
 ---
 
-##  Step 5: Import Grafana Dashboards
+##  Import Grafana Dashboards
 
 | Dashboard Name     | ID     |
 | ------------------ | ------ |
@@ -227,7 +227,7 @@ Navigate to: **+ → Import** in Grafana and enter the ID.
 
 ---
 
-##  Step 6: Create Alert Rules
+##  Create Alert Rules
 
 ```bash
 cat <<EOF > custom-rules.yaml
@@ -255,7 +255,7 @@ kubectl apply -f custom-rules.yaml
 
 ---
 
-##  Step 7: Simulate Alerts
+##  Simulate Alerts
 
 ```bash
 kubectl apply -f - <<EOF
@@ -313,7 +313,7 @@ EOF
 
 ---
 
-##  Step 8: Configure Notifications (SMTP + Slack + OpsGenie)
+##  Configure Notifications (SMTP + Slack + OpsGenie)
 
 ```bash
 cat <<EOF > alertmanager-values.yaml
