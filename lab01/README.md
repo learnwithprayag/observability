@@ -224,56 +224,63 @@ Copy 16-character password.
 ###  Configure Full Alertmanager
 
 ```bash
-cat <<EOF | kubectl apply -f -
+cat <<EOF > nodeport-services.yaml
 apiVersion: v1
-kind: Secret
+kind: Service
 metadata:
-  name: alertmanager-main
+  name: prometheus-nodeport
   namespace: monitoring
   labels:
+    app: prometheus
+spec:
+  type: NodePort
+  selector:
+    prometheus: k8s
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+      nodePort: 32090
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-nodeport
+  namespace: monitoring
+  labels:
+    app: grafana
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      nodePort: 32080
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-nodeport
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: NodePort
+  selector:
     alertmanager: main
-type: Opaque
-stringData:
-  alertmanager.yaml: |
-    global:
-      smtp_smarthost: smtp.gmail.com:587
-      smtp_from: your_email@gmail.com
-      smtp_auth_username: your_email@gmail.com
-      smtp_auth_password: your_gmail_app_password
-      smtp_require_tls: true
-    route:
-      group_by: ['alertname']
-      receiver: email-notifier
-      group_wait: 10s
-      group_interval: 1m
-      repeat_interval: 1h
-      routes:
-      - receiver: slack-notifier
-        matchers:
-        - severity="critical"
-      - receiver: opsgenie-notifier
-        matchers:
-        - team="ops"
-    receivers:
-    - name: email-notifier
-      email_configs:
-      - to: your_email@gmail.com
-        send_resolved: true
-    - name: slack-notifier
-      slack_configs:
-      - api_url: https://hooks.slack.com/services/XXX/XXX/XXX
-        channel: "#alerts"
-        title: "{{ .CommonLabels.alertname }} - {{ .Status }}"
-        text: |
-          *Severity:* {{ .CommonLabels.severity }}
-          *Summary:* {{ .Annotations.summary }}
-    - name: opsgenie-notifier
-      opsgenie_configs:
-      - api_key: your_opsgenie_api_key
-        responders:
-        - name: DevOps Team
-          type: team
+  ports:
+    - name: http
+      port: 9093
+      targetPort: 9093
+      nodePort: 32093
 EOF
+
+kubectl apply -f nodeport-services.yaml
+
 ```
 
 ---
