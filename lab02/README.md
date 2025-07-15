@@ -101,6 +101,8 @@ spec:
 EOF
 
 kubectl apply -f servicemonitor.yaml
+kubectl -n monitoring get servicemonitor | grep http-echo-monitor
+
 ```
 
 ---
