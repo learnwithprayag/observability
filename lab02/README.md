@@ -73,6 +73,8 @@ spec:
 EOF
 
 kubectl apply -f deploy-echo.yaml
+kubectl -n demo get all
+
 ```
 
 ---
