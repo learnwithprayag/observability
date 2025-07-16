@@ -173,10 +173,6 @@ kubectl -n demo run curlpod --rm -it --image=curlimages/curl --restart=Never -- 
 
 ---
 
-Great! Let's extend **Lab 02** by adding **Prometheus Alerts (PrometheusRule)** for our instrumented Flask app that exposes the `/metrics` endpoint.
-
----
-
 ### Prometheus Alerting Rules**
 
 We'll define a **PrometheusRule** that alerts when:
