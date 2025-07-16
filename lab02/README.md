@@ -251,13 +251,15 @@ kubectl apply -f prometheus-rules.yaml
    * Generate traffic:
 
      ```bash
-     kubectl -n demo run spammer --rm -it --image=curlimages/curl --restart=Never -- \
-       sh -c 'for i in \$(seq 1 100); do curl -s flask-metrics.demo.svc.cluster.local:5000/; done'
+     kubectl -n demo run spammer --image=curlimages/curl --restart=Never --rm -it -- \
+     sh -c 'for i in $(seq 1 100); do curl -s flask-metrics.demo.svc.cluster.local:5000/ > /dev/null; sleep 0.1; done'
+
+
      ```
 
 ---
 
-### 📁 Updated Folder Structure
+### Updated Folder Structure
 
 ```
 observability/
@@ -271,7 +273,7 @@ observability/
 
 ---
 
-### ✅ Optional: Cleanup
+### Optional: Cleanup
 
 ```bash
 kubectl delete ns demo
@@ -287,17 +289,6 @@ kubectl -n monitoring delete prometheusrule flask-metrics-rules
 kubectl delete ns demo
 kubectl -n monitoring delete servicemonitor flask-metrics-monitor
 ```
-
 ---
-
-### 📁 Folder Structure
-
-```
-observability/
-└── lab02/
-    ├── app.py
-    ├── Dockerfile
-    ├── k8s-deployment.yaml
-    ├── servicemonitor.yaml
 ```
 
