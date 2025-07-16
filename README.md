@@ -1,4 +1,4 @@
-# 📊 Observability in DevOps
+#  Observability in DevOps
 
 ---
 
@@ -40,20 +40,20 @@ Observability traditionally relies on **three key pillars**:
 
 ##  Monitoring vs Observability
 
-| Feature                  | **Monitoring**                                  | **Observability**                                 |
+| Feature                  | **Monitoring**                                   | **Observability**                                 |
 |--------------------------|--------------------------------------------------|---------------------------------------------------|
 | **Purpose**              | Detect known failures and alert                  | Understand unknown internal system behavior       |
 | **Scope**                | Health checks, thresholds                        | System-wide behavior and performance analysis     |
 | **Approach**             | Reactive (alert when something breaks)           | Proactive + Reactive (understand why it broke)    |
 | **Focus**                | Predefined metrics and events                    | Complete system introspection                     |
-| **Handles Unknowns?**    | ❌ No                                             | ✅ Yes                                             |
+| **Handles Unknowns?**    | No                                               | Yes                                               |
 | **Used For**             | Alerting, status dashboards                      | Debugging, RCA, performance optimization          |
-| **Data Used**            | Metrics, logs                                     | Metrics, logs, traces, events                     |
-| **Example Question**     | Is CPU > 90%?                                     | Why is the request latency high only in region X? |
+| **Data Used**            | Metrics, logs                                    | Metrics, logs, traces, events                     |
+| **Example Question**     | Is CPU > 90%?                                    | Why is the request latency high only in region X? |
 
 ---
 
-## 🛠 Tools Used in Observability Stack
+##  Tools Used in Observability Stack
 
 | Layer         | Tools                                                  |
 |---------------|--------------------------------------------------------|
