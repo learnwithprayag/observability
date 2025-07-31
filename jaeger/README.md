@@ -171,6 +171,7 @@ docker-compose up --build
 ### Test the App (in another terminal)
 
 ```bash
+curl http://localhost:9090/metrics
 curl http://localhost:5000/
 curl http://localhost:5000/slow
 curl http://localhost:5000/error
