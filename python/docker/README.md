@@ -1,20 +1,8 @@
-Here is your complete `README.md` for the lab:
-# DevOps Observability Lab: Prometheus SDK vs OpenTelemetry (Python)
-
-## Overview
-
-This lab demonstrates how to instrument a Python Flask application using two approaches:
-
-1. **Prometheus Python Client SDK** – a direct, basic way to expose metrics.
-2. **OpenTelemetry + Prometheus Exporter** – a modern, scalable observability pipeline.
-
----
-
 ## Folder Structure
 
 ```
-
 prometheus-python-app/
+├── .gitignore
 ├── prometheus/
 │   ├── app.py
 │   ├── requirements.txt
@@ -23,22 +11,63 @@ prometheus-python-app/
 │   ├── app.py
 │   ├── requirements.txt
 │   └── Dockerfile
+```
 
-````
+---
+
+## `.gitignore`
+
+Create in the root (`prometheus-python-app/`):
+
+```bash
+cat >> .gitignore << 'EOF'
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# VSCode or other IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+EOF
+```
+
+---
+
+# DevOps Observability Lab: Prometheus SDK vs OpenTelemetry (Python)
+
+## Overview
+
+This lab demonstrates two approaches for instrumenting Python Flask apps:
+
+1. **Prometheus Python SDK** – direct metric exposure
+2. **OpenTelemetry + Prometheus Exporter** – scalable observability pipeline
+
+---
+
+## Setup (Both Apps)
+
+### Python Virtual Environment
+
+```bash
+cd prometheus-python-app/<prometheus|opentelemetry>
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+> Repeat the above for both `prometheus` and `opentelemetry` folders.
 
 ---
 
 ## Prometheus Python Client SDK
 
-### 🔹 Code Overview
+### 📄 `app.py`
 
-- Metrics defined using `prometheus_client` (Counter, Histogram)
-- Metrics manually exposed at `/metrics` endpoint
-- Manual instrumentation of application logic
-
-### Files
-
-**`app.py`**
 ```python
 from flask import Flask
 from prometheus_client import Counter, Histogram, generate_latest
@@ -63,16 +92,16 @@ def metrics():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-````
+```
 
-**`requirements.txt`**
+### `requirements.txt`
 
 ```
 flask
 prometheus_client
 ```
 
-**`Dockerfile`**
+### `Dockerfile`
 
 ```dockerfile
 FROM python:3.10-slim
@@ -95,15 +124,7 @@ docker run -d -p 5000:5000 --name prometheus-app prometheus-python-app
 
 ## OpenTelemetry + Prometheus Exporter
 
-### Code Overview
-
-* Metrics collected using OpenTelemetry APIs
-* Exported using `PrometheusMetricReader`
-* Supports auto-instrumentation for Flask
-
-### Files
-
-**`app.py`**
+### 📄 `app.py`
 
 ```python
 from flask import Flask
@@ -147,7 +168,7 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
 ```
 
-**`requirements.txt`**
+### `requirements.txt`
 
 ```
 flask
@@ -159,7 +180,7 @@ prometheus_client
 werkzeug
 ```
 
-**`Dockerfile`**
+### `Dockerfile`
 
 ```dockerfile
 FROM python:3.10-slim
@@ -191,16 +212,16 @@ docker run -d -p 5001:5000 --name otel-app otel-python-app
 
 ---
 
-## Comparison: SDK vs OpenTelemetry
+## SDK vs OpenTelemetry
 
-| Feature                   | Prometheus SDK                     | OpenTelemetry + Prometheus Exporter           |
-| ------------------------- | ---------------------------------- | --------------------------------------------- |
-| Metric API                | `prometheus_client`                | `opentelemetry.sdk.metrics`                   |
-| Export format             | Manual `/metrics` route            | PrometheusMetricReader                        |
-| Counter usage             | `Counter.inc()`                    | `counter.add()`                               |
-| Histogram usage           | `Histogram.time()` or `.observe()` | `histogram.record()`                          |
-| Auto-instrumentation      | ❌ No                               | ✅ Flask, FastAPI, etc.                        |
-| Tracing & Logging Support | ❌ Not supported                    | ✅ Full observability suite                    |
-| Best for                  | Simple apps, quick metrics         | Microservices, enterprise-grade observability |
+| Feature                   | Prometheus SDK                     | OpenTelemetry + Prometheus Exporter     |
+| ------------------------- | ---------------------------------- | --------------------------------------- |
+| Metric API                | `prometheus_client`                | `opentelemetry.sdk.metrics`             |
+| Export format             | Manual `/metrics` route            | PrometheusMetricReader                  |
+| Counter usage             | `Counter.inc()`                    | `counter.add()`                         |
+| Histogram usage           | `Histogram.time()` or `.observe()` | `histogram.record()`                    |
+| Auto-instrumentation      | ❌ No                               | ✅ Flask, FastAPI, etc.                  |
+| Tracing & Logging Support | ❌ Not supported                    | ✅ Full observability suite              |
+| Best for                  | Simple apps, quick metrics         | Microservices, enterprise observability |
 
 
