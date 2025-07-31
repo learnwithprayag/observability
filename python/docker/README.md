@@ -1,6 +1,3 @@
-
----
-
 # DevOps Observability Lab: Prometheus SDK vs OpenTelemetry (Python)
 
 ## Overview
@@ -218,14 +215,167 @@ docker run -d -p 5001:5000 --name otel-app otel-python-app
 
 ## SDK vs OpenTelemetry
 
-| Feature                   | Prometheus SDK                     | OpenTelemetry + Prometheus Exporter     |
-| ------------------------- | ---------------------------------- | --------------------------------------- |
-| Metric API                | `prometheus_client`                | `opentelemetry.sdk.metrics`             |
-| Export format             |  Manual `/metrics` route            |  PrometheusMetricReader                  |
-| Counter usage             | `Counter.inc()`                    | `counter.add()`                         |
-| Histogram usage           | `Histogram.time()` or `.observe()` | `histogram.record()`                    |
-| Auto-instrumentation      |  No                                |  Flask, FastAPI, etc.                  |
-| Tracing & Logging Support |  Not supported                     |  Full observability suite              |
-| Best for                  |  Simple apps, quick metrics         |  Microservices, enterprise observability |
+| Feature                   | Prometheus SDK                     | OpenTelemetry + Prometheus Exporter      |
+| ------------------------- | ---------------------------------- | ---------------------------------------  |
+| Metric API                | `prometheus_client`                | `opentelemetry.sdk.metrics`              |
+| Export format             |  Manual `/metrics` route            |  PrometheusMetricReader                 |
+| Counter usage             | `Counter.inc()`                    | `counter.add()`                          |
+| Histogram usage           | `Histogram.time()` or `.observe()` | `histogram.record()`                     |
+| Auto-instrumentation      |  No                                |  Flask, FastAPI, etc.                    |
+| Tracing & Logging Support |  Not supported                     |  Full observability suite                |
+| Best for                  |  Simple apps, quick metrics        |  Microservices, enterprise observability |
+
+---
+
+# Metrics Collection in Python: Prometheus SDK vs OpenTelemetry
+
+Below is the explanation for the metric instrumentation used in both the **Prometheus SDK** and **OpenTelemetry** approaches in our Python sample applications.
+
+##  Prometheus Client SDK explanation
+
+**File:** `prometheus/app.py`
+
+###  Imports and Setup
+
+```python
+from prometheus_client import Counter, Histogram, generate_latest
+from flask import Flask, Response
+import time
+import random
+```
+
+* `Counter`: Tracks counts (e.g., number of requests).
+* `Histogram`: Tracks observations (e.g., durations, sizes).
+* `generate_latest`: Formats the metrics for Prometheus.
+
+---
+
+###  Metric Definitions
+
+```python
+REQUEST_COUNT = Counter("app_requests_total", "Total number of requests")
+REQUEST_LATENCY = Histogram("app_request_latency_seconds", "Request latency")
+```
+
+* `app_requests_total`: Increments every time an endpoint is hit.
+* `app_request_latency_seconds`: Observes how long each request takes.
+
+---
+
+###  Endpoint Logic
+
+```python
+@app.route("/")
+def index():
+    REQUEST_COUNT.inc()
+    with REQUEST_LATENCY.time():
+        time.sleep(random.uniform(0.1, 0.9))
+    return "Hello, Prometheus!"
+```
+
+* `REQUEST_COUNT.inc()`: Increments count.
+* `with REQUEST_LATENCY.time()`: Automatically observes execution time.
+
+---
+
+###  /metrics Endpoint
+
+```python
+@app.route("/metrics")
+def metrics():
+    return Response(generate_latest(), mimetype="text/plain")
+```
+
+* Prometheus scrapes metrics from this endpoint.
+
+---
+
+##  2. Using OpenTelemetry SDK with Prometheus Exporter
+
+**File:** `opentelemetry/app.py`
+
+### Imports and Setup
+
+```python
+from opentelemetry import metrics
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+```
+
+* `metrics`: OpenTelemetry global API.
+* `MeterProvider`: Provider for metric collection.
+* `PrometheusMetricReader`: Exporter to expose metrics in Prometheus format.
+
+---
+
+###  Metric Setup
+
+```python
+reader = PrometheusMetricReader()
+provider = MeterProvider(metric_readers=[reader])
+metrics.set_meter_provider(provider)
+meter = metrics.get_meter(__name__)
+```
+
+* `PrometheusMetricReader()` creates `/metrics` automatically on port `8000` (default).
+* `get_meter()` is equivalent to a namespace or instrumentation library.
+
+---
+
+###  Define Instruments
+
+```python
+request_counter = meter.create_counter("app_requests_total")
+latency_histogram = meter.create_histogram("app_request_latency_seconds")
+```
+
+* Same purpose as in Prometheus SDK, but through OpenTelemetry's abstraction.
+
+---
+
+### Instrument Application Logic
+
+```python
+@app.route("/")
+def index():
+    request_counter.add(1)
+    start_time = time.time()
+    time.sleep(random.uniform(0.1, 0.9))
+    latency = time.time() - start_time
+    latency_histogram.record(latency)
+    return "Hello, OpenTelemetry!"
+```
+
+* `add(1)`: Increment counter.
+* `record(latency)`: Observe duration.
+
+---
+
+### Metrics Exposure
+
+Handled automatically by `PrometheusMetricReader` at:
+
+```
+http://localhost:8000/metrics
+```
+
+---
+
+## Key Differences
+
+| Feature          | Prometheus SDK               | OpenTelemetry                                            |
+| ---------------- | ---------------------------- | -------------------------------------------------------- |
+| Installation     | `prometheus_client`          | `opentelemetry-sdk`, `opentelemetry-exporter-prometheus` |
+| Metrics Exposure | Manual `/metrics` route      | Auto-exposed via `PrometheusMetricReader`                |
+| Ecosystem        | Tight Prometheus integration | Vendor-neutral, supports other exporters                 |
+| Abstraction      | Direct instrumentation       | Abstracted, decoupled from backend                       |
+
+---
+
+##Conclusion
+
+* Use **Prometheus SDK** for simple, native integration.
+* Use **OpenTelemetry** for a **more flexible**, **vendor-agnostic**, and **production-grade** observability setup.
+
 
 
