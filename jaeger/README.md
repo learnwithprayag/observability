@@ -178,3 +178,54 @@ curl http://localhost:5000/error
 | Prometheus | [http://localhost:9090](http://localhost:9090)   |
 
 
+In **Jaeger**, you primarily use it for **tracing** – to visualize and analyze how requests flow through your application. Here’s how you can **check** and **what to check**:
+
+---
+
+###  **1. Access Jaeger UI**
+
+Open in browser:
+**`http://<your-vm-ip>:16686`**
+
+Or, from localhost if using Docker Desktop:
+**`http://localhost:16686`**
+
+---
+
+### **2. What to Check in Jaeger**
+
+| Checkpoint            | What to Look For                                                |
+| --------------------- | --------------------------------------------------------------- |
+| **Service Dropdown**  | Your app name should appear here (e.g., `app` or Flask service) |
+| **Operations**        | List of instrumented routes (e.g., `/`, `/slow`, `/error`)      |
+| **Traces Count**      | Indicates number of requests captured                           |
+| **Trace Timeline**    | Shows time taken by each span (e.g., delay in `/slow`)          |
+| **Span Tree**         | Shows parent-child relationships of spans                       |
+| **Tags**              | Context like HTTP method, status code, exceptions               |
+| **Logs**              | Event logs within a span (if added manually)                    |
+| **Duration Analysis** | Helps identify slow endpoints or performance bottlenecks        |
+
+---
+
+###  **Example Checks**
+
+1. **Check `/` Route**
+
+   * Appears under `app` service
+   * Duration is short (\~1ms)
+   * Status: OK (200)
+
+2. **Check `/slow` Route**
+
+   * Duration will be \~2 seconds
+   * Helps confirm latency visibility
+
+3. **Check `/error` Route**
+
+   * Should have `error` tag
+   * Status: 500
+   * Stack trace or error message may appear in logs/tags
+
+
+
+
