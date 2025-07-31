@@ -51,16 +51,25 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 
-# Setup tracer provider
-trace.set_tracer_provider(TracerProvider())
+# Set tracer provider BEFORE getting tracer
+trace.set_tracer_provider(
+    TracerProvider(
+        resource=Resource.create({SERVICE_NAME: "flask-app"})
+    )
+)
+
+# Now get tracer AFTER setting provider
 tracer = trace.get_tracer(__name__)
 
-# Configure OTLP exporter to send to Jaeger
-span_processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://jaeger:4318/v1/traces"))
+# Configure OTLP exporter to send traces to Jaeger
+span_processor = BatchSpanProcessor(
+    OTLPSpanExporter(endpoint="http://jaeger:4318/v1/traces")
+)
 trace.get_tracer_provider().add_span_processor(span_processor)
 
-# Flask App
+# Create and instrument Flask app
 app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
 
