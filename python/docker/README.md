@@ -1,3 +1,16 @@
+
+---
+
+# DevOps Observability Lab: Prometheus SDK vs OpenTelemetry (Python)
+
+## Overview
+
+This lab demonstrates two approaches for instrumenting Python Flask apps:
+
+1. **Prometheus Python SDK** – direct metric exposure
+2. **OpenTelemetry + Prometheus Exporter** – scalable observability pipeline
+
+---
 ## Folder Structure
 
 ```
@@ -34,18 +47,6 @@ __pycache__/
 .env
 EOF
 ```
-
----
-
-# DevOps Observability Lab: Prometheus SDK vs OpenTelemetry (Python)
-
-## Overview
-
-This lab demonstrates two approaches for instrumenting Python Flask apps:
-
-1. **Prometheus Python SDK** – direct metric exposure
-2. **OpenTelemetry + Prometheus Exporter** – scalable observability pipeline
-
 ---
 
 ## Setup (Both Apps)
@@ -124,7 +125,7 @@ docker run -d -p 5000:5000 --name prometheus-app prometheus-python-app
 
 ## OpenTelemetry + Prometheus Exporter
 
-### 📄 `app.py`
+###  `app.py`
 
 ```python
 from flask import Flask
@@ -217,11 +218,11 @@ docker run -d -p 5001:5000 --name otel-app otel-python-app
 | Feature                   | Prometheus SDK                     | OpenTelemetry + Prometheus Exporter     |
 | ------------------------- | ---------------------------------- | --------------------------------------- |
 | Metric API                | `prometheus_client`                | `opentelemetry.sdk.metrics`             |
-| Export format             | Manual `/metrics` route            | PrometheusMetricReader                  |
+| Export format             |  Manual `/metrics` route            |  PrometheusMetricReader                  |
 | Counter usage             | `Counter.inc()`                    | `counter.add()`                         |
 | Histogram usage           | `Histogram.time()` or `.observe()` | `histogram.record()`                    |
-| Auto-instrumentation      | ❌ No                               | ✅ Flask, FastAPI, etc.                  |
-| Tracing & Logging Support | ❌ Not supported                    | ✅ Full observability suite              |
-| Best for                  | Simple apps, quick metrics         | Microservices, enterprise observability |
+| Auto-instrumentation      |  No                                |  Flask, FastAPI, etc.                  |
+| Tracing & Logging Support |  Not supported                     |  Full observability suite              |
+| Best for                  |  Simple apps, quick metrics         |  Microservices, enterprise observability |
 
 
